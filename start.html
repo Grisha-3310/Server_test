@@ -1,0 +1,63 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Заготовка сайта</title>
+	<style>
+		:root{--bg:#f7f7f9;--card:#ffffff;--accent:#0066cc}
+		body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#111}
+		header{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+		.container{max-width:1000px;margin:0 auto;padding:16px}
+		nav{display:flex;gap:12px;align-items:center}
+		a.logo{font-weight:700;color:var(--accent);text-decoration:none}
+		main{display:grid;grid-template-columns:1fr 320px;gap:20px;margin-top:20px}
+		.hero{background:var(--card);padding:20px;border-radius:8px}
+		.sidebar{background:var(--card);padding:16px;border-radius:8px;height:fit-content}
+		footer{margin-top:24px;padding:16px;text-align:center;color:#666}
+		@media (max-width:800px){main{grid-template-columns:1fr;}
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<div class="container">
+			<nav>
+				<a class="logo" href="#">Мой сайт</a>
+				<div style="flex:1"></div>
+				<a href="#">О нас</a>
+				<a href="#">Услуги</a>
+				<a href="#">Контакты</a>
+			</nav>
+		</div>
+	</header>
+
+	<div class="container">
+		<main>
+			<section class="hero">
+				<h1>Привет! Это заготовка сайта</h1>
+				<p>Короткое описание проекта. Здесь можно разместить информацию о целях, преимуществах и призыв к действию.</p>
+				<p><button onclick="alert('Кнопка нажата')">Связаться</button></p>
+			</section>
+
+			<aside class="sidebar">
+				<h3>Быстрые ссылки</h3>
+				<ul>
+					<li><a href="#">Документация</a></li>
+					<li><a href="#">Блог</a></li>
+					<li><a href="#">Поддержка</a></li>
+				</ul>
+			</aside>
+		</main>
+
+		<footer>
+			<small>© <span id="year"></span> Мой сайт. Все права защищены.</small>
+		</footer>
+	</div>
+
+	<script>
+		document.getElementById('year').textContent = new Date().getFullYear();
+	</script>
+</body>
+</html>
