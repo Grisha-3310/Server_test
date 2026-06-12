@@ -1,255 +1,420 @@
-from pathlib import Path
-
-html = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jump Cube</title>
+<title>Pixel Hill Racer</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+html, body {
+    margin: 0;
+    overflow: hidden;
+    background: #87CEEB;
+    font-family: monospace;
+    touch-action: none;
 }
 
-body{
-    overflow:hidden;
-    font-family:Arial,sans-serif;
-    background:#111;
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
 }
 
-#game{
-    position:relative;
-    width:100vw;
-    height:100vh;
-    background:linear-gradient(#5ecbff,#dff6ff);
-    overflow:hidden;
+#ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    z-index: 10;
+    font-size: clamp(14px, 2vw, 24px);
+    text-shadow: 2px 2px 0 black;
 }
 
-#ground{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:18vh;
-    background:#2d8f3a;
+#controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
-#player{
-    position:absolute;
-    width:min(9vw,60px);
-    height:min(9vw,60px);
-    background:#ffcc00;
-    left:15vw;
-    bottom:18vh;
-    border-radius:10px;
+.btn {
+    width: 110px;
+    height: 110px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.15);
+    border: 3px solid white;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 34px;
+    user-select: none;
 }
 
-.obstacle{
-    position:absolute;
-    width:min(8vw,50px);
-    height:min(10vw,70px);
-    background:#ff4d4d;
-    bottom:18vh;
-    border-radius:8px;
+@media (min-width: 900px){
+    .btn{
+        width: 90px;
+        height: 90px;
+    }
 }
 
-#score{
-    position:absolute;
-    top:20px;
-    left:20px;
-    font-size:clamp(20px,3vw,36px);
-    font-weight:bold;
-    color:white;
+#startScreen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    z-index: 20;
+    text-align: center;
 }
 
-#menu{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    background:rgba(0,0,0,0.55);
-    color:white;
-    text-align:center;
-    z-index:20;
+#startScreen h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    margin-bottom: 20px;
 }
 
-#menu h1{
-    font-size:clamp(34px,6vw,64px);
-    margin-bottom:20px;
+#startScreen p {
+    font-size: clamp(16px, 2vw, 28px);
+    margin-bottom: 30px;
+    padding: 0 20px;
 }
 
-#menu p{
-    font-size:clamp(16px,2.5vw,24px);
-    margin-bottom:25px;
-    padding:0 20px;
-}
-
-button{
-    padding:14px 28px;
-    font-size:20px;
-    border:none;
-    border-radius:12px;
-    background:#ffcc00;
-    cursor:pointer;
-    font-weight:bold;
+button {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 12px;
+    background: #ffd000;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<div id="game">
-    <div id="score">Очки: 0</div>
-
-    <div id="player"></div>
-
-    <div id="ground"></div>
-
-    <div id="menu">
-        <h1>Jump Cube</h1>
-        <p>Прыгай через препятствия.<br>
-        Пробел, клик мышкой или тап по экрану.</p>
-        <button onclick="startGame()">Старт</button>
-    </div>
+<div id="ui">
+    <div id="distance">Distance: 0m</div>
+    <div id="fuel">Fuel: 100%</div>
+    <div id="coins">Coins: 0</div>
 </div>
 
+<div id="controls">
+    <div class="btn" id="leftBtn">◀</div>
+    <div class="btn" id="rightBtn">▶</div>
+</div>
+
+<div id="startScreen">
+    <h1>Pixel Hill Racer</h1>
+    <p>
+        ПК: стрелки или A/D<br>
+        Телефон: кнопки на экране
+    </p>
+    <button onclick="startGame()">Играть</button>
+</div>
+
+<canvas id="game"></canvas>
+
 <script>
-const player = document.getElementById("player");
-const game = document.getElementById("game");
-const scoreText = document.getElementById("score");
-const menu = document.getElementById("menu");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let jumping = false;
-let velocity = 0;
-let gravity = 0.9;
-let playerY = 0;
-
-let obstacles = [];
-let gameRunning = false;
-let score = 0;
-let speed = 7;
-
-function jump(){
-    if(!jumping && gameRunning){
-        jumping = true;
-        velocity = 16;
-    }
+function resize(){
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
 }
+resize();
+addEventListener("resize", resize);
+
+const keys = {
+    left:false,
+    right:false
+};
 
 document.addEventListener("keydown", e=>{
-    if(e.code === "Space"){
-        jump();
-    }
+    if(e.key==="ArrowLeft"||e.key==="a") keys.left=true;
+    if(e.key==="ArrowRight"||e.key==="d") keys.right=true;
 });
 
-document.addEventListener("mousedown", jump);
-document.addEventListener("touchstart", jump);
+document.addEventListener("keyup", e=>{
+    if(e.key==="ArrowLeft"||e.key==="a") keys.left=false;
+    if(e.key==="ArrowRight"||e.key==="d") keys.right=false;
+});
 
-function createObstacle(){
-    const obs = document.createElement("div");
-    obs.classList.add("obstacle");
+function bindButton(id,key){
+    const btn=document.getElementById(id);
 
-    let startX = window.innerWidth + 60;
-    obs.style.left = startX + "px";
-
-    game.appendChild(obs);
-
-    obstacles.push({
-        el: obs,
-        x: startX
+    btn.addEventListener("touchstart",e=>{
+        e.preventDefault();
+        keys[key]=true;
     });
+
+    btn.addEventListener("touchend",e=>{
+        e.preventDefault();
+        keys[key]=false;
+    });
+
+    btn.addEventListener("mousedown",()=>keys[key]=true);
+    btn.addEventListener("mouseup",()=>keys[key]=false);
+    btn.addEventListener("mouseleave",()=>keys[key]=false);
+}
+
+bindButton("leftBtn","left");
+bindButton("rightBtn","right");
+
+const terrain=[];
+
+for(let i=0;i<6000;i++){
+    terrain.push(
+        Math.sin(i*0.05)*70+
+        Math.sin(i*0.015)*120+
+        canvas.height*0.68
+    );
+}
+
+function groundHeight(x){
+    const index=Math.floor(x/20);
+    return terrain[index] || canvas.height;
+}
+
+const coins=[];
+
+for(let i=20;i<6000;i+=25){
+    coins.push({
+        x:i*20,
+        y:terrain[i]-80,
+        taken:false
+    });
+}
+
+const fuels=[];
+
+for(let i=50;i<6000;i+=80){
+    fuels.push({
+        x:i*20,
+        y:terrain[i]-90,
+        taken:false
+    });
+}
+
+const car={
+    x:200,
+    y:0,
+    vx:0,
+    vy:0,
+    angle:0,
+    fuel:100,
+    coins:0
+};
+
+let gameStarted=false;
+
+function startGame(){
+    document.getElementById("startScreen").style.display="none";
+    gameStarted=true;
+}
+
+function drawRect(x,y,w,h,color){
+    ctx.fillStyle=color;
+    ctx.fillRect(Math.round(x),Math.round(y),w,h);
 }
 
 function update(){
-    if(!gameRunning) return;
 
-    requestAnimationFrame(update);
+    if(!gameStarted) return;
 
-    if(Math.random() < 0.02){
-        createObstacle();
+    const ground=groundHeight(car.x);
+
+    if(keys.right && car.fuel>0){
+        car.vx+=0.16;
+        car.fuel-=0.03;
     }
 
-    if(jumping){
-        playerY += velocity;
-        velocity -= gravity;
-
-        if(playerY <= 0){
-            playerY = 0;
-            jumping = false;
-        }
+    if(keys.left && car.fuel>0){
+        car.vx-=0.08;
+        car.fuel-=0.02;
     }
 
-    player.style.transform = `translateY(${-playerY}px)`;
+    car.vx*=0.992;
+    car.vy+=0.38;
 
-    const playerRect = player.getBoundingClientRect();
+    car.x+=car.vx;
+    car.y+=car.vy;
 
-    obstacles.forEach((obs,index)=>{
-        obs.x -= speed;
-        obs.el.style.left = obs.x + "px";
+    if(car.y>ground-35){
+        car.y=ground-35;
+        car.vy=0;
 
-        const obsRect = obs.el.getBoundingClientRect();
+        const front=groundHeight(car.x+30);
+        const back=groundHeight(car.x-30);
 
-        if(
-            playerRect.left < obsRect.right &&
-            playerRect.right > obsRect.left &&
-            playerRect.top < obsRect.bottom &&
-            playerRect.bottom > obsRect.top
-        ){
-            endGame();
-        }
+        car.angle=Math.atan2(front-back,60);
+    }
 
-        if(obs.x < -100){
-            obs.el.remove();
-            obstacles.splice(index,1);
+    for(const coin of coins){
+        if(!coin.taken){
+            const dx=car.x-coin.x;
+            const dy=car.y-coin.y;
 
-            score++;
-            scoreText.textContent = "Очки: " + score;
-
-            if(score % 5 === 0){
-                speed += 0.5;
+            if(Math.hypot(dx,dy)<45){
+                coin.taken=true;
+                car.coins++;
             }
         }
-    });
+    }
+
+    for(const fuel of fuels){
+        if(!fuel.taken){
+            const dx=car.x-fuel.x;
+            const dy=car.y-fuel.y;
+
+            if(Math.hypot(dx,dy)<45){
+                fuel.taken=true;
+                car.fuel=Math.min(100,car.fuel+45);
+            }
+        }
+    }
 }
 
-function startGame(){
-    obstacles.forEach(o=>o.el.remove());
-    obstacles=[];
+function draw(){
 
-    score = 0;
-    speed = 7;
-    playerY = 0;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    scoreText.textContent = "Очки: 0";
+    const camX=car.x-canvas.width/3;
 
-    menu.style.display = "none";
-    gameRunning = true;
+    ctx.fillStyle="#87CEEB";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
+    ctx.fillStyle="#FFD93D";
+    ctx.beginPath();
+    ctx.arc(canvas.width-120,100,50,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#7895B2";
+
+    for(let i=0;i<15;i++){
+        ctx.fillRect(
+            i*350-(camX*0.2)%350,
+            canvas.height-360,
+            220,
+            360
+        );
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(0,canvas.height);
+
+    for(let x=0;x<canvas.width;x++){
+        const worldX=x+camX;
+        const y=groundHeight(worldX);
+        ctx.lineTo(x,y);
+    }
+
+    ctx.lineTo(canvas.width,canvas.height);
+
+    ctx.fillStyle="#43AA4A";
+    ctx.fill();
+
+    ctx.fillStyle="#7B4F2C";
+    ctx.fillRect(0,canvas.height-50,canvas.width,50);
+
+    for(const coin of coins){
+        if(!coin.taken){
+            drawRect(
+                coin.x-camX,
+                coin.y,
+                18,
+                18,
+                "#FFD700"
+            );
+        }
+    }
+
+    for(const fuel of fuels){
+        if(!fuel.taken){
+
+            drawRect(
+                fuel.x-camX,
+                fuel.y,
+                22,
+                26,
+                "#FF3333"
+            );
+
+            drawRect(
+                fuel.x-camX+7,
+                fuel.y+6,
+                8,
+                14,
+                "white"
+            );
+        }
+    }
+
+    ctx.save();
+
+    ctx.translate(car.x-camX,car.y);
+    ctx.rotate(car.angle);
+
+    drawRect(-35,-20,70,25,"#D62828");
+    drawRect(-10,-40,30,22,"#FF6B6B");
+
+    drawRect(-28,2,18,18,"black");
+    drawRect(12,2,18,18,"black");
+
+    drawRect(-22,8,6,6,"gray");
+    drawRect(18,8,6,6,"gray");
+
+    ctx.restore();
+
+    document.getElementById("distance").innerText=
+        "Distance: "+Math.floor(car.x/10)+"m";
+
+    document.getElementById("fuel").innerText=
+        "Fuel: "+Math.floor(car.fuel)+"%";
+
+    document.getElementById("coins").innerText=
+        "Coins: "+car.coins;
+
+    if(car.fuel<=0 && Math.abs(car.vx)<0.05){
+
+        ctx.fillStyle="rgba(0,0,0,0.7)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        ctx.fillStyle="white";
+        ctx.font="48px monospace";
+        ctx.fillText(
+            "GAME OVER",
+            canvas.width/2-170,
+            canvas.height/2
+        );
+
+        ctx.font="24px monospace";
+
+        ctx.fillText(
+            "Обнови страницу для рестарта",
+            canvas.width/2-190,
+            canvas.height/2+50
+        );
+    }
+}
+
+function loop(){
     update();
+    draw();
+    requestAnimationFrame(loop);
 }
 
-function endGame(){
-    gameRunning = false;
+car.y=groundHeight(car.x)-35;
 
-    menu.innerHTML = `
-        <h1>Игра окончена</h1>
-        <p>Твой результат: ${score}</p>
-        <button onclick="location.reload()">Играть снова</button>
-    `;
-
-    menu.style.display = "flex";
-}
+loop();
 </script>
 
 </body>
 </html>
-"""
-
-path = Path("/mnt/data/jump_cube_game.html")
-path.write_text(html, encoding="utf-8")
-
-print("Saved:", path)
