@@ -1,48 +1,255 @@
+from pathlib import Path
 
-<!doctype html>
+html = """<!DOCTYPE html>
 <html lang="ru">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>Заготовка сайта</title>
-	<style>
-		:root{--bg:#f7f7f9;--card:#ffffff;--accent:#0066cc}
-		body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#111}
-		header{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
-		.container{max-width:1000px;margin:0 auto;padding:16px}
-		nav{display:flex;gap:12px;align-items:center}
-		a.logo{font-weight:700;color:var(--accent);text-decoration:none}
-		main{display:grid;grid-template-columns:1fr 320px;gap:20px;margin-top:20px}
-		.hero{background:var(--card);padding:20px;border-radius:8px}
-		.sidebar{background:var(--card);padding:16px;border-radius:8px;height:fit-content}
-		footer{margin-top:24px;padding:16px;text-align:center;color:#666}
-		@media (max-width:800px){main{grid-template-columns:1fr;}
-		}
-	</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jump Cube</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    background:#111;
+}
+
+#game{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    background:linear-gradient(#5ecbff,#dff6ff);
+    overflow:hidden;
+}
+
+#ground{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:18vh;
+    background:#2d8f3a;
+}
+
+#player{
+    position:absolute;
+    width:min(9vw,60px);
+    height:min(9vw,60px);
+    background:#ffcc00;
+    left:15vw;
+    bottom:18vh;
+    border-radius:10px;
+}
+
+.obstacle{
+    position:absolute;
+    width:min(8vw,50px);
+    height:min(10vw,70px);
+    background:#ff4d4d;
+    bottom:18vh;
+    border-radius:8px;
+}
+
+#score{
+    position:absolute;
+    top:20px;
+    left:20px;
+    font-size:clamp(20px,3vw,36px);
+    font-weight:bold;
+    color:white;
+}
+
+#menu{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,0.55);
+    color:white;
+    text-align:center;
+    z-index:20;
+}
+
+#menu h1{
+    font-size:clamp(34px,6vw,64px);
+    margin-bottom:20px;
+}
+
+#menu p{
+    font-size:clamp(16px,2.5vw,24px);
+    margin-bottom:25px;
+    padding:0 20px;
+}
+
+button{
+    padding:14px 28px;
+    font-size:20px;
+    border:none;
+    border-radius:12px;
+    background:#ffcc00;
+    cursor:pointer;
+    font-weight:bold;
+}
+</style>
 </head>
+
 <body>
-	<header>
-		<div class="container">
-			<nav>
-				<a class="logo" href="#">Мой сайт</a>
-			</nav>
-		</div>
-	</header>
 
-	<div class="container">
-		<main>
-			<section class="hero">
-				<h1>Привет! Это заготовка сайта</h1>
-				<p>Короткое описание проекта. Здесь можно будет потом сыграть в игру.</p>
-				<p>Проэкт открытый поэтому любой желающий может внести свой вклад.</p>
-				<p><button onclick="alert('Ярик бочок потік')">Связаться</button></p>
-			</section>
-		</main>
+<div id="game">
+    <div id="score">Очки: 0</div>
 
-	</div>
+    <div id="player"></div>
 
-	<script>
-		document.getElementById('year').textContent = new Date().getFullYear();
-	</script>
+    <div id="ground"></div>
+
+    <div id="menu">
+        <h1>Jump Cube</h1>
+        <p>Прыгай через препятствия.<br>
+        Пробел, клик мышкой или тап по экрану.</p>
+        <button onclick="startGame()">Старт</button>
+    </div>
+</div>
+
+<script>
+const player = document.getElementById("player");
+const game = document.getElementById("game");
+const scoreText = document.getElementById("score");
+const menu = document.getElementById("menu");
+
+let jumping = false;
+let velocity = 0;
+let gravity = 0.9;
+let playerY = 0;
+
+let obstacles = [];
+let gameRunning = false;
+let score = 0;
+let speed = 7;
+
+function jump(){
+    if(!jumping && gameRunning){
+        jumping = true;
+        velocity = 16;
+    }
+}
+
+document.addEventListener("keydown", e=>{
+    if(e.code === "Space"){
+        jump();
+    }
+});
+
+document.addEventListener("mousedown", jump);
+document.addEventListener("touchstart", jump);
+
+function createObstacle(){
+    const obs = document.createElement("div");
+    obs.classList.add("obstacle");
+
+    let startX = window.innerWidth + 60;
+    obs.style.left = startX + "px";
+
+    game.appendChild(obs);
+
+    obstacles.push({
+        el: obs,
+        x: startX
+    });
+}
+
+function update(){
+    if(!gameRunning) return;
+
+    requestAnimationFrame(update);
+
+    if(Math.random() < 0.02){
+        createObstacle();
+    }
+
+    if(jumping){
+        playerY += velocity;
+        velocity -= gravity;
+
+        if(playerY <= 0){
+            playerY = 0;
+            jumping = false;
+        }
+    }
+
+    player.style.transform = `translateY(${-playerY}px)`;
+
+    const playerRect = player.getBoundingClientRect();
+
+    obstacles.forEach((obs,index)=>{
+        obs.x -= speed;
+        obs.el.style.left = obs.x + "px";
+
+        const obsRect = obs.el.getBoundingClientRect();
+
+        if(
+            playerRect.left < obsRect.right &&
+            playerRect.right > obsRect.left &&
+            playerRect.top < obsRect.bottom &&
+            playerRect.bottom > obsRect.top
+        ){
+            endGame();
+        }
+
+        if(obs.x < -100){
+            obs.el.remove();
+            obstacles.splice(index,1);
+
+            score++;
+            scoreText.textContent = "Очки: " + score;
+
+            if(score % 5 === 0){
+                speed += 0.5;
+            }
+        }
+    });
+}
+
+function startGame(){
+    obstacles.forEach(o=>o.el.remove());
+    obstacles=[];
+
+    score = 0;
+    speed = 7;
+    playerY = 0;
+
+    scoreText.textContent = "Очки: 0";
+
+    menu.style.display = "none";
+    gameRunning = true;
+
+    update();
+}
+
+function endGame(){
+    gameRunning = false;
+
+    menu.innerHTML = `
+        <h1>Игра окончена</h1>
+        <p>Твой результат: ${score}</p>
+        <button onclick="location.reload()">Играть снова</button>
+    `;
+
+    menu.style.display = "flex";
+}
+</script>
+
 </body>
 </html>
+"""
+
+path = Path("/mnt/data/jump_cube_game.html")
+path.write_text(html, encoding="utf-8")
+
+print("Saved:", path)
